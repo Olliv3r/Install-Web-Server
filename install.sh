@@ -15,24 +15,6 @@ banner() {
 	figlet -f Remo773.flf "Install"
 }
 
-spin() {
-	pid=$!
-	delay=0.25
-	spinner=('█■■■■' '■█■■■' '■■█■■' '■■■█■' '■■■■█')
-
-	while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-		for i in ${spinner[*]}; do
-			tput civis
-			echo -ne "\e[1;32m\r[*] Downloading, please wait...$i\e[0m"
-			sleep $delay
-			printf "\b\b\b\b\b\b\b\b"
-		done
-	done
-	tput cnorm
-	echo -e "\e[1;32m\r[+] Downloading, please wait...[Done]\e[0m\n"
-	echo
-}
-
 req_install() {
 	banner
 	echo -e "\n\e[1;36mInstalling packages necessary to run the program.\n\e[0m"
@@ -45,42 +27,57 @@ configure_apache() {
 	echo -e "\n\e[1;36mConfiguring Apache to run HTML pages..\n\e[0m"
 	cp apache/* $PREFIX/etc/apache2
 
-	[ ! -d $PREFIX/etc/apache2/ssl ] && sleep 2 && mkdir $PREFIX/etc/apache2/ssl
+	[ ! -d $PREFIX/etc/apache2/ssl ] && mkdir $PREFIX/etc/apache2/ssl
+	chmod 700 $PREFIX/etc/apache2/ssl
 	cp ssl/* $PREFIX/etc/apache2/ssl
 	cp extra/* $PREFIX/etc/apache2/extra
+	cp phpmyadmin/* $PREFIX/etc/phpmyadmin
 	echo "Apache has been configured, press ENTER to return to the menu."; read
 	menu
 }
 
 configure_phpmyadmin() {
 	banner
+	echo -e "\nRunning mariadbd in the background, please wait...\n"
+	pkill -f data/data/com.termux/files/usr/bin/mariadbd
+	mariadbd-safe -u root > /dev/null &
+	sleep 6
+
 	echo -e "\n\e[1;36mConfiguring access to phpmyadmin..\n\e[0m"
 	sleep 1
 
-	echo "User name: " ; read user
-	echo "Password: " ; read password
+	echo -ne "User name: " ; read username
+	echo -ne "Password: " ; read password
+	echo -ne "\n\e[1;32mProcessing the command, please wait...\e[0m\n"
+	sleep 1
 
-	if [ -z "$user" -o -z "$password" ]; then
+	if [ -z "$username" -o -z "$password" ]; then
 		echo -e "\n\e[1;31mPanel access data is required.\n\e[0m"
 		echo -e "\e[1;33mPress ENTER to return to configuring access.\e[0m"
 		read
 		configure_phpmyadmin
 	fi
 
-	mysqld_safe -u root &> /dev/null &
-	sleep 2
-	
-	mysql -u root -D mysql -e "use mysql;CREATE USER '$user'@'localhost' IDENTIFIED BY '$password';GRANT ALL PRIVILEGES ON * . * TO '$user'@'localhost';FLUSH PRIVILEGES;"
+
+	user=$(mariadb -u root -D mysql -e "SELECT user FROM user WHERE user='$username'")
+
+	if [ -n "$user" ]; then
+		echo -e "\n\e[1;33mThis user already exists, try another username. Press ENTER to try again.\n\e[0m"
+		read
+		configure_phpmyadmin
+	fi
+
+	mariadb -u root -D mysql -e "CREATE USER '$username'@'localhost' IDENTIFIED BY '$password';GRANT ALL PRIVILEGES ON * . * TO '$username'@'localhost';FLUSH PRIVILEGES;"
 
 	[ -d $PREFIX/etc/phpmyadmin ] && cp phpmyadmin/* $PREFIX/etc/phpmyadmin
 	sleep 2
 	echo -e "\n\e[1;32mYour new login to the phpmyadmin panel:\e[0m\n"
-	echo -e "\e[0mUser name: \e[2;32m$user\e[0m"
+	echo -e "\e[0mUser name: \e[2;32m$username\e[0m"
 	echo -e "\e[0mPassword: \e[2;32m$password\e[0m"
 	echo -e "\nLink: \e[28;32mhttps://localhost:8443/phpmyadmin\n\e[0m"
-	pkill mysqld_safe
-	pkill mariadbd
+	pkill -f /data/data/com.termux/files/usr/bin/mariadbd
 	echo "phpmyadmin has been configured, press ENTER to return to the menu."; read
+	menu
 
 }
 
@@ -115,4 +112,10 @@ menu() {
 }
 
 
-menu
+main() {
+	check_os
+	apt update && apt upgrade -y
+	apt install figlet -yq
+	menu
+}
+main
