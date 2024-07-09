@@ -36,7 +36,7 @@ cd Install-Web-Server && bash install.sh
 ### Recursos:
 - [x] Hospedagem de projetos em /sdcard/htdocs
 - [x] Painel do PhpMyAdmin
-- [ ] URL Amigável em breve
+- [x] URL Amigável habilitado
 
 
 @silva_olie :+1: Boa sorte! :shipit:
