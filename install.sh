@@ -48,11 +48,13 @@ check_access_internal() {
       mv /sdcard/htdocs /sdcard/htdocs_backup/htdocs-$(date +%d-%m-%Y:%H:%M:%S)
       mkdir /sdcard/htdocs
       echo "<?php phpinfo(); ?>" > /sdcard/htdocs/index.php
+      cp .htaccess /sdcard/htdocs
     fi
 
   elif [ ! -d /sdcard/htdocs ]; then
     mkdir /sdcard/htdocs
     echo "<?php phpinfo(); ?>" > /sdcard/htdocs/index.php
+    cp .htaccess /sdcard/htdocs
   fi
 
   sleep 2
