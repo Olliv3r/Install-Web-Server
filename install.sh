@@ -1,30 +1,88 @@
 #!/usr/bin/env bash
 #
+# Instala e configura um servidor web completo no ambiente termux
+#
+# Author: Oliver Silva
 #
 
-# VERIFICA SE RODA NO AMBIENTE TERMUX
-check_os() {
-	if [ -z "$TERMUX_APP__PACKAGE_NAME" ]; then
-		echo "Only compatible with the Termux environment."
-		exit
-	fi
-}
+packages=("php" "php-apache" "phpmyadmin" "mariadb" "apache2" "openssl" "openssl-tool")
 
+
+# BANNER
 banner() {
 	clear
 	figlet -f Remo773.flf "Install"
 }
 
+# VERIFICA SE RODA NO AMBIENTE TERMUX
+check_os() {
+	if [ -z "$TERMUX_APP__PACKAGE_NAME" ]; then
+		echo "Only compatible with the Termux environment...[None]"
+		exit
+	fi
+	echo -e "\nEnvironment compatible with the program...[Ok]"
+
+	sleep 1
+}
+
+# VERIFICA ACESSO A MEMORIA INTERNA
+check_access_internal() {
+	while [ ! -d $HOME/storage ] ; do
+		echo -e "Allow access to internal memory...[None]\n"
+		termux-setup-storage
+	done
+
+	[ ! -d /sdcard/htdocs ] && mkdir /sdcard/htdocs
+	[ ! -f /sdcard/htdocs/index.php ] && {
+		echo "<?php phpinfo(); ?>" > /sdcard/htdocs/index.php
+	}
+	[ ! -f /sdcard/htdocs/.htaccess ] && cp .htaccess /sdcard/htdocs
+
+	echo -e "\nAllow granted internal memory...[Ok]\n"
+	sleep 1
+}
+
+# VERIFICA SE OS PACOTES NECESSÁRIOS FORAM INSTALADOS
+check_packages() {
+	for package in ${packages[*]}; do
+		if [ ! -n "$(dpkg -l | grep $package)" ]; then
+			echo -e "Required package '$package' is not present in the system, please use the first menu option to install all necessary packages, Press the ENTER key to return to the menu...\n"; read
+			sleep 1
+			menu
+		fi
+	done
+	echo -e "Checking packages needed for the program...[Ok]\n"
+}
+
+# INSTALA TODOS OS PACOTES NECESSÁRIOS
 req_install() {
 	banner
-	echo -e "\n\e[1;36mInstalling packages necessary to run the program.\n\e[0m"
-	apt install php php-apache phpmyadmin mariadb apache2 openssl openssl-tool -yq
+	echo -e "\n\e[1;36mInstalling packages necessary to run the program...\n\e[0m"
+	
+	for package in ${packages[*]}; do
+		if [ ! -n "$(dpkg -l | grep $package)" ]; then
+			apt install $package -yq
+		fi
+	done
 	sleep 2
 }
 
+# MATA UM PROCESSO EM SEGUNDO PLANO
+kill_process() {
+	process_name="$1"
+
+	[ -n "$(ps -e | grep $process_name)" ] && pkill -f /data/data/com.termux/files/usr/bin/$process_name
+	sleep 2
+}
+
+# CONFIGURA O APACHE
 configure_apache() {
 	banner
+	echo
+	check_packages
+
 	echo -e "\n\e[1;36mConfiguring Apache to run HTML pages..\n\e[0m"
+	sleep 1
 	cp apache/* $PREFIX/etc/apache2
 
 	[ ! -d $PREFIX/etc/apache2/ssl ] && mkdir $PREFIX/etc/apache2/ssl
@@ -32,14 +90,18 @@ configure_apache() {
 	cp ssl/* $PREFIX/etc/apache2/ssl
 	cp extra/* $PREFIX/etc/apache2/extra
 	cp phpmyadmin/* $PREFIX/etc/phpmyadmin
-	echo "Apache has been configured, press ENTER to return to the menu."; read
+	echo -e "Apache has been configured, press ENTER to return to the menu...\n"; read
 	menu
 }
 
+# CONFIGURA O PHPMYADMIN
 configure_phpmyadmin() {
 	banner
+	echo
+	check_packages
+
 	echo -e "\nRunning mariadbd in the background, please wait...\n"
-	pkill -f data/data/com.termux/files/usr/bin/mariadbd
+	kill_process "mariadbd"
 	mariadbd-safe -u root > /dev/null &
 	sleep 6
 
@@ -75,13 +137,17 @@ configure_phpmyadmin() {
 	echo -e "\e[0mUser name: \e[2;32m$username\e[0m"
 	echo -e "\e[0mPassword: \e[2;32m$password\e[0m"
 	echo -e "\nLink: \e[28;32mhttps://localhost:8443/phpmyadmin\n\e[0m"
-	pkill -f /data/data/com.termux/files/usr/bin/mariadbd
-	echo "phpmyadmin has been configured, press ENTER to return to the menu."; read
+	echo -e "\nDefault directory: \e[28;32m/sdcard/htdocs\n\e[0m"
+	kill_process "mariadbd"
+	echo -e "phpmyadmin has been configured, press ENTER to return to the menu...\n"; read
 	menu
 
 }
 
-goodbye() { echo -e "\n\n\e[1;31mProgram interrupt.\e[0m\n"; exit; }
+goodbye() {
+	kill_process "mariadbd"
+	echo -e "\n\n\e[1;31mProgram interrupt.\e[0m\n"; exit; 
+}
 
 menu() {
 	trap "goodbye" SIGTSTP SIGINT
@@ -103,7 +169,7 @@ menu() {
 	echo -ne "\nOption: "; read option
 	echo $option
 
-	[ -z "$option" ] && menu
+	[ -z "$option" -o "$option" -gt 4 -o "$option" -eq 0 ] && menu
 	[ "$option" == "1" ] && req_install && menu
 	[ "$option" == "2" ] && configure_apache && menu
 	[ "$option" == "3" ] && configure_phpmyadmin && menu
@@ -113,7 +179,12 @@ menu() {
 
 
 main() {
+	banner
+	echo -e "\nChecking requirements to run the program correctly..."
+	sleep 1
 	check_os
+	check_access_internal
+	check_packages
 	apt update && apt upgrade -y
 	apt install figlet -yq
 	menu
