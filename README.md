@@ -5,7 +5,7 @@ Instala e configura um servidor web completo de forma automática.
 ![Tela](https://github.com/Olliv3r/Install-Web-Server/blob/main/tela.jpg)
 
 ### O que faz?
-O `install` é um instalador de servidor web completo pra termux, podendo instalar e configurar o apache e phpmyadnin diretamente no ambiente termux sem o uso do duper-usuário (root).
+O `install` é um instalador de servidor web completo pra termux, podendo instalar e configurar o `Apache` e `PhpMyAdmin` diretamente no ambiente termux sem o uso do duper-usuário (root).
 
 ### Instalação:
 Instalar o git:
@@ -35,6 +35,7 @@ cd Install-Web-Server && bash install.sh
 
 ### Recursos:
 - [x] Hospedagem de projetos em /sdcard/htdocs
+- [x] Painel do PhpMyAdmin
 - [ ] URL Amigável em breve
 
 
