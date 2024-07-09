@@ -2,7 +2,7 @@
 Instala e configura um servidor web completo de forma automática.
 
 ### Captura:
-![Tela](https://github.com/Olliv3r/Install-Web-Server/blog/main/tela.jpg)
+![Tela](https://github.com/Olliv3r/Install-Web-Server/blob/main/tela.jpg)
 
 ### Instalação:
 Instalar o git:
