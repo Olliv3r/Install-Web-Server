@@ -139,7 +139,7 @@ configure_phpmyadmin() {
 	echo -e "\e[0mUser name: \e[1;32m$username\e[0m"
 	echo -e "\e[0mPassword: \e[1;32m$password\e[0m"
 	echo -e "\e[0mLink: \e[1;32mhttps://localhost:8443/phpmyadmin\n\e[0m"
-	echo -e "\e[0mDirectory project: \e[1;32m/data/data/com.termux/files/usr/share/apache2/default-site/htdocs\n\e[0m"
+	echo -e "\e[0mDirectory project: \e[1;32m/sdcard/htdocs\n\e[0m"
 	echo -e "\e[0mStart the mariadb server with: \e[1;32mmariadbd-safe -u $username &\n\e[0m"
 	echo -e "\e[0mStop mariadb server with: \e[1;32mpkill -f /data/data/com.termux/files/usr/bin/mariadbd\n\e[0m"
 

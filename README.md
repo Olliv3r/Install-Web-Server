@@ -2,7 +2,7 @@
 Instala e configura um servidor web completo de forma automática.
 
 ### Captura:
-![Tela](https://github.com/Olliv3r/Install-Web-Server/blob/main/tela.jpg)
+![Tela](https://github.com/Olliv3r/Install-Web-Server/blog/main/tela.jpg)
 
 ### Instalação:
 Instalar o git:
@@ -29,6 +29,10 @@ cd Install-Web-Server && bash install.sh
 2. Configura o apache para projetos
 4. Configura o acesso ao painel do phpmyadmin
 4. Sai do programa
+
+### Recursos:
+- [x] Hospedagem de projetos em /sdcard/htdocs
+- [ ] URL Amigável em breve
 
 
 @silva_olie :+1: Boa sorte! :shipit:
