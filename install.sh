@@ -73,6 +73,71 @@ check_packages() {
   echo -e "\e[0mChecking packages needed for the program...[\e[1;32mOk\e[0m]\e[0m"
 }
 
+# CONFIGURA O APACHE
+configure_apache() {
+  banner "Apache"
+  echo
+  check_packages  
+    
+  echo -e "\n\e[1;36mConfiguring Apache to run HTML pages...\e[0m"
+  sleep 2
+ 
+  # conf httpd
+  if [ -f $PREFIX/etc/apache2/httpd.conf ]; then
+    if cmp -s "./apache/httpd.conf" "$PREFIX/etc/apache2/httpd.conf"; then
+      echo -e "\n\e[0mApache httpd [\e[1;32mOk\e[0m]\n" 
+    else
+      echo -e "\n\e[0mModifying apache httpd...\n"
+      cp ./apache/httpd.conf $PREFIX/etc/apache2/httpd.conf
+    fi
+  else
+    echo -e "\n\e[0mCreating apache httpd...\n"
+    cp ./apache/httpd.conf $PREFIX/etc/apache2/httpd.conf
+  fi
+
+  # conf extra
+  for program_extra_file in ./extra/*; do
+    if [ -f $PREFIX/etc/apache2/extra/$(basename $program_extra_file) ]; then
+      if cmp -s "$program_extra_file" "$PREFIX/etc/apache2/extra/$(basename $program_extra_file)"; then
+        echo -e "\e[0mApache extra $(echo $(basename $program_extra_file) | cut -d '.' -f1) [\e[1;32mOk\e[0m]\n"
+      else
+        echo -e "\e[0mModifying apache $(echo $(basename $program_extra_file) | cut -d '.' -f1)....\n"
+        cp $program_extra_file $PREFIX/etc/apache2/extra
+      fi
+    else
+      echo -e "\e[0mCreating apache $(echo $(basename $program_extra_file) | cut -d '.' -f1)...\n"
+      cp ./extra/$(basename $program_extra_file) $PREFIX/etc/apache2/extra
+    fi
+  done
+
+  # conf ssl
+  if  [ ! -d $PREFIX/etc/apache2/ssl ]; then
+    echo -e "\e[0mCreating apache ssl crt e key...\n"
+    mkdir $PREFIX/etc/apache2/ssl
+    chmod 700 $PREFIX/etc/apache2/ssl
+    cp ./ssl/* $PREFIX/etc/apache2/ssl
+  else
+    echo -e "\e[0mModifying apache ssl crt e key...\n"
+    cp ./ssl/* $PREFIX/etc/apache2/ssl
+  fi
+ 
+  # phpmyadmin
+  if [ -f $PREFIX/etc/phpmyadmin/config.inc.php ]; then
+    if cmp -s "./phpmyadmin/config.inc.php" "$PREFIX/etc/phpmyadmin/config.inc.php"; then
+      echo -e "\e[0mPhpMyAdmin config.inc [\e[1;32mOk\e[0m]"
+    else
+      echo -e "\e[0mModifying config.inc..."
+      cp ./phpmyadmin/config.inc.php $PREFIX/etc/phpmyadmin/config.inc.php
+    fi
+  else
+    echo -e "\e[0mCreating config.inc..."
+    cp ./phpmyadmin/config.inc.php $PREFIX/etc/phpmyadmin/config.inc.php
+  fi
+
+   echo -e "\e\n[0mApache has been configured, press \e[1;33mENTER\e[0m to return to the menu...\n"; read
+   menu
+}
+
 # INSTALA TODOS OS PACOTES NECESSÁRIOS
 req_install() {
   banner "Packages"
@@ -85,8 +150,8 @@ req_install() {
   done
 
   sleep 2
-  echo -e "\e[0mThe packages were installed successfully.\e\n[0m"
-  echo -e "\e[0mPress ENTER to return to the menu...\e[0m"; read
+  echo -e "\e[0m\e[1;32mThe packages were installed successfully.\e\n[0m"
+  echo -e "\e[0mPress \e[1;33mENTER\e[0m to return to the menu...\e[0m"; read
   menu
 }
 
@@ -96,28 +161,6 @@ kill_process() {
 
   [ -n "$(ps -e | grep $process_name)" ] && pkill -f /data/data/com.termux/files/usr/bin/$process_name
   sleep 2
-}
-
-# CONFIGURA O APACHE
-configure_apache() {
-  banner "Apache"
-  echo
-  check_packages
-  
-  echo -e "\n\e[1;36mConfiguring Apache to run HTML pages..\n\e[0m"
-  sleep 1
-  
-  cp apache/* $PREFIX/etc/apache2
-  
-  [ ! -d $PREFIX/etc/apache2/ssl ] && mkdir $PREFIX/etc/apache2/ssl
-  
-  chmod 700 $PREFIX/etc/apache2/ssl
-  cp ssl/* $PREFIX/etc/apache2/ssl
-  cp extra/* $PREFIX/etc/apache2/extra
-  cp phpmyadmin/* $PREFIX/etc/phpmyadmin
-  
-  echo -e "\e[0mApache has been configured, press ENTER to return to the menu...\n"; read
-  menu
 }
 
 # CONFIGURA O PHPMYADMIN
@@ -214,7 +257,7 @@ main() {
   sleep 1
   check_os
   check_access_internal
-  check_packages
+  #check_packages
   menu
 }
 main
