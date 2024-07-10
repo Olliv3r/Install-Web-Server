@@ -5,7 +5,8 @@
 # Author: Oliver Silva
 #
 
-packages=("php" "php-apache" "phpmyadmin" "mariadb" "apache2" "openssl" "openssl-tool" "figlet")
+packages=("php" "php-apache" "phpmyadmin" "mariadb" "apache2" "openssl" "openssl-tool")
+version="0.0.5"
 
 # BANNER
 banner() {
@@ -31,7 +32,7 @@ check_access_internal() {
 
   while [ $? -eq 2 ] ; do
     echo -e "\e[0m\nAllow access to internal memory...[\e[1;31mNone\e[0m]"
-    #echo -e "\e[0mPress ENTER to ask for memory permission...\e[0m\n"
+
     termux-setup-storage
     sleep 3
     res=$(ls /sdcard &> /dev/null)
@@ -41,7 +42,7 @@ check_access_internal() {
   sleep 2
 
   if [ -d /sdcard/htdocs ]; then
-    echo -e "\e[1;33mhtdocs folder found, do you want to make a backup copy? y/n\n\e[0m"; read resp
+    echo -e "\e[0mThe '\e[1;33mhtdocs\e[0m' Project Folder was found, do you want to back it up? \e[1;33my\e[0m/\e[1;33mn\e[0m\n\e[0m"; read resp
     
     if [ "$resp" == "y" ]; then
       [ ! -d /sdcard/htdocs_backup ] && mkdir /sdcard/htdocs_backup
@@ -64,7 +65,7 @@ check_access_internal() {
 check_packages() {
   for package in ${packages[*]}; do
     if [ ! -n "$(dpkg -l | grep $package)" ]; then
-      echo -e "\e[1;33mRequired package '\e[1;32m$package\e[1;33m' is not present in the system, please use the first menu option to install all necessary packages, Press the ENTER key to return to the menu...\n\e[0m"; read
+      echo -e "\e[0mRequired package '\e[1;33m$package\e[0m' is not present in the system, please use the first menu option to install all necessary packages, Press the '\e[1;33mENTER\e[0m' key to return to the menu...\n\e[0m"; read
       sleep 1
       menu
     fi
@@ -216,6 +217,27 @@ configure_phpmyadmin() {
 
 }
 
+# DESINSTALA TODOS OS PROGRAMAS
+uninstall() {
+  banner "Uninstall"
+  echo -e "\n\e[1;36mUninstalling all packages...\e[0m\n"
+
+  for package in ${packages[*]}; do
+    if [ -n "$(dpkg -l | grep $package)" ]; then
+      echo -e "\e[1;32mUninstalling package $package...\e[0m\n"
+      apt autoremove $package* -y
+    else
+      echo -e "\e[0mThe \e[1;33m$package\e[0m package has already been uninstalled before.\e[0m\n"
+    fi
+  done
+  apt autoclean
+
+  sleep 2
+  echo -e "\n\e[1;32mAll packages have been uninstalled, press ENTER to return to the menu...\e[0m\n"
+  read
+  menu
+}
+
 goodbye() {
   kill_process "mariadbd"
   echo -e "\n\n\e[1;31mProgram interrupt.\e[0m\n"; exit; 
@@ -225,15 +247,14 @@ menu() {
   trap "goodbye" SIGTSTP SIGINT
   clear
   banner "Menu IWS"
+
+  echo -e "\n\e[1;32m\t\tV$version\e[0m"
   
   echo -e "\n\e[1;36mInstall and configure web server according to your wishes.\e[0m\n"
   
   n=1
   
-  for option in "Install Required Packages" \
-  	        "Configure Apache" \
-  	        "Configure PhpMyAdmin" \
-  	        "Exit"; do 
+  for option in "Install Required Packages" "Configure Apache" "Configure PhpMyAdmin" "Uninstall programs" "Exit"; do
     echo -e "\e[1;32m[\e[1;36m$n\e[1;32m] $option\e[0m"
     n=$((n +1))
   done
@@ -241,11 +262,12 @@ menu() {
   echo -ne "\nOption: "; read option
   echo $option
   
-  [ -z "$option" -o "$option" -gt 4 -o "$option" -eq 0 ] && menu
-  [ "$option" == "1" ] && req_install && menu
-  [ "$option" == "2" ] && configure_apache && menu
-  [ "$option" == "3" ] && configure_phpmyadmin && menu
-  [ "$option" == "4" ] && exit
+  [ -z "$option" -o "$option" -gt 5 -o "$option" -eq 0 ] && menu
+  [ "$option" == "1" ] && req_install
+  [ "$option" == "2" ] && configure_apache
+  [ "$option" == "3" ] && configure_phpmyadmin
+  [ "$option" == "4" ] && uninstall
+  [ "$option" == "5" ] && exit
 
 }
 
@@ -257,7 +279,6 @@ main() {
   sleep 1
   check_os
   check_access_internal
-  #check_packages
   menu
 }
 main

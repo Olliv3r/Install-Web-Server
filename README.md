@@ -26,6 +26,9 @@ cd Install-Web-Server && bash install.sh
 > [!WARNING]
 > Para conseguir instalar o servidor web no ambiente termux, é necessário escolher as opçôes por ordem númerica. Comece instalando os pacotes necessários na *primeira opção*, depois configure o Apache no *segunda opção* e por fim configure o PhpMyAdmin na *terceira opção*.
 
+### Desinstalar
+Caso queira desinstalar todos os programas instalados pelo `install`, basta escolher a *quarta opção*.
+
 
 ### Opçôes:
 1. Instala todos os pacotes necessários para rodar o servidor web
