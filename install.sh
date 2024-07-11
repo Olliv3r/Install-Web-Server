@@ -2,7 +2,9 @@
 #
 # Instala e configura um servidor web completo no ambiente termux
 #
-# Author: Oliver Silva
+# Author: Oliver Silva, 8 de julho de 2024
+#
+# 
 #
 
 packages=("php" "php-apache" "phpmyadmin" "mariadb" "apache2" "openssl" "openssl-tool")
@@ -64,7 +66,7 @@ check_access_internal() {
 # VERIFICA SE OS PACOTES NECESSÁRIOS FORAM INSTALADOS
 check_packages() {
   for package in ${packages[*]}; do
-    if [ ! -n "$(dpkg -l | grep $package)" ]; then
+    if [ -z "$(dpkg -l | grep $package)" ]; then
       echo -e "\e[0mRequired package '\e[1;33m$package\e[0m' is not present in the system, please use the first menu option to install all necessary packages, Press the '\e[1;33mENTER\e[0m' key to return to the menu...\n\e[0m"; read
       sleep 1
       menu
@@ -73,6 +75,54 @@ check_packages() {
 
   echo -e "\e[0mChecking packages needed for the program...[\e[1;32mOk\e[0m]\e[0m"
 }
+
+
+# INSTALA TODOS OS PACOTES NECESSÁRIOS
+req_install() {
+  banner "Packages"
+  echo -e "\n\e[1;36mInstalling packages necessary to run the program...\n\e[0m"
+	
+  for package in ${packages[*]}; do
+    if [ ! -n "$(dpkg -l | grep $package)" ]; then
+      apt install $package -yq
+    fi
+  done
+
+  sleep 2
+  echo -e "\e[0m\e[1;32mThe packages were installed successfully.\e\n[0m"
+  echo -e "\e[0mPress \e[1;33mENTER\e[0m to return to the menu...\e[0m"; read
+  menu
+}
+
+# DESINSTALA TODOS OS PROGRAMAS
+uninstall() {
+  banner "Uninstall"
+  echo -e "\n\e[1;36mUninstalling all packages...\e[0m\n"
+
+  for package in ${packages[*]}; do
+    if [ -n "$(dpkg -l | grep $package)" ]; then
+      echo -e "\e[1;32mUninstalling package $package...\e[0m\n"
+      apt purge $package -y
+    else
+      echo -e "\e[0mThe \e[1;33m$package\e[0m package has already been uninstalled before.\e[0m\n"
+    fi
+  done
+  apt autoremove -y && apt clean
+
+  sleep 2
+  echo -e "\n\e[1;32mAll packages have been uninstalled, press ENTER to return to the menu...\e[0m\n"
+  read
+  menu
+}
+
+# MATA UM PROCESSO EM SEGUNDO PLANO
+kill_process() {
+  process_name="$1"
+
+  [ -n "$(ps -e | grep $process_name)" ] && pkill -f /data/data/com.termux/files/usr/bin/$process_name
+  sleep 2
+}
+
 
 # CONFIGURA O APACHE
 configure_apache() {
@@ -139,31 +189,6 @@ configure_apache() {
    menu
 }
 
-# INSTALA TODOS OS PACOTES NECESSÁRIOS
-req_install() {
-  banner "Packages"
-  echo -e "\n\e[1;36mInstalling packages necessary to run the program...\n\e[0m"
-	
-  for package in ${packages[*]}; do
-    if [ ! -n "$(dpkg -l | grep $package)" ]; then
-      apt install $package -yq
-    fi
-  done
-
-  sleep 2
-  echo -e "\e[0m\e[1;32mThe packages were installed successfully.\e\n[0m"
-  echo -e "\e[0mPress \e[1;33mENTER\e[0m to return to the menu...\e[0m"; read
-  menu
-}
-
-# MATA UM PROCESSO EM SEGUNDO PLANO
-kill_process() {
-  process_name="$1"
-
-  [ -n "$(ps -e | grep $process_name)" ] && pkill -f /data/data/com.termux/files/usr/bin/$process_name
-  sleep 2
-}
-
 # CONFIGURA O PHPMYADMIN
 configure_phpmyadmin() {
   banner "PhpMyAdmin"
@@ -215,27 +240,6 @@ configure_phpmyadmin() {
   echo -e "phpmyadmin has been configured, press ENTER to return to the menu...\n"; read
   menu
 
-}
-
-# DESINSTALA TODOS OS PROGRAMAS
-uninstall() {
-  banner "Uninstall"
-  echo -e "\n\e[1;36mUninstalling all packages...\e[0m\n"
-
-  for package in ${packages[*]}; do
-    if [ -n "$(dpkg -l | grep $package)" ]; then
-      echo -e "\e[1;32mUninstalling package $package...\e[0m\n"
-      apt autoremove $package* -y
-    else
-      echo -e "\e[0mThe \e[1;33m$package\e[0m package has already been uninstalled before.\e[0m\n"
-    fi
-  done
-  apt autoclean
-
-  sleep 2
-  echo -e "\n\e[1;32mAll packages have been uninstalled, press ENTER to return to the menu...\e[0m\n"
-  read
-  menu
 }
 
 goodbye() {
