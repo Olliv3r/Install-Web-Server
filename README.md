@@ -24,17 +24,39 @@ cd Install-Web-Server && bash install.sh
 ```
 
 > [!WARNING]
-> Para conseguir instalar o servidor web no ambiente termux, é necessário escolher as opçôes por ordem númerica. Comece instalando os pacotes necessários na *primeira opção*, depois configure o Apache no *segunda opção* e por fim configure o PhpMyAdmin na *terceira opção*.
+> Para conseguir instalar o servidor web no ambiente termux, é necessário escolher as opçôes por ordem númerica na forma acrescente. Comece instalando os pacotes necessários na *primeira opção*, depois configure o Apache no *segunda opção* e por fim configure o PhpMyAdmin (Opcional) na *terceira opção*.
 
-### Desinstalar
+### Desinstalar:
 Caso queira desinstalar todos os programas instalados pelo `install`, basta escolher a *quarta opção*.
 
 
 ### Opçôes:
-1. Instala todos os pacotes necessários para rodar o servidor web
-2. Configura o apache para projetos
-4. Configura o acesso ao painel do phpmyadmin
-4. Sai do programa
+1. Instala todos os pacotes necessários
+2. Configura o apache para projetos 
+3. Configura o acesso ao painel do phpmyadmin (Opcional)
+4. Desinstala pacotee instalados na *primeira opção*
+5. Sai do programa
+
+### Bônus:
+
+##### Apache:
+Para iniciar o servidor apache, execute o comando:
+```
+apachectl -k start
+```
+Para encerrar o servidor apache, execute o comando:
+```
+apachectl -k stop
+```
+##### Mariadb:
+Para iniciar o servidor mariadbd-safe, execute o comando:
+```
+mariadbd-safe -u SEU_USUARIO &
+```
+Para encerrar o servidor mariadbd-safe, execute o comando:
+```
+pkill -f /data/data/com.termux/files/usr/bin/mariadbd
+```
 
 ### Recursos:
 - [x] Hospedagem de projetos em /sdcard/htdocs
