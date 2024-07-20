@@ -9,6 +9,8 @@
 
 packages=("php" "php-apache" "phpmyadmin" "mariadb" "apache2" "openssl" "openssl-tool")
 version="0.0.5"
+default=/sdcard/htdocs
+backup=/sdcard/htdocs_backup
 
 # BANNER
 banner() {
@@ -28,8 +30,15 @@ check_os() {
   sleep 1
 }
 
+# CRIA O DIRETÓRIO HTDOCS
+create_htdocs() {
+  mkdir $default
+  echo "<?php phpinfo(); ?>" > $default/index.php
+  cp .htaccess $default
+}
+
 # VERIFICA ACESSO A MEMORIA INTERNA
-check_access_internal() {
+check_access_internal() { 
   res=$(ls /sdcard &> /dev/null)
 
   while [ $? -eq 2 ] ; do
@@ -43,21 +52,24 @@ check_access_internal() {
   echo -e "\e[0m\nAllow granted internal memory...[\e[1;32mOk\e[0m]\n"
   sleep 2
 
-  if [ -d /sdcard/htdocs ]; then
-    echo -e "\e[0mThe '\e[1;33mhtdocs\e[0m' Project Folder was found, do you want to back it up? \e[1;33my\e[0m/\e[1;33mn\e[0m\n\e[0m"; read resp
+  if [ -d $default ]; then
+    echo -ne "\e[0mThe '\e[1;33mhtdocs\e[0m' Project Folder was found, do you want to back it up? \e[1;33my\e[0m/\e[1;33mn\e[0m [y] : \e[0m"; read resp
     
-    if [ "$resp" == "y" ]; then
-      [ ! -d /sdcard/htdocs_backup ] && mkdir /sdcard/htdocs_backup
-      mv /sdcard/htdocs /sdcard/htdocs_backup/htdocs-$(date +%d-%m-%Y:%H:%M:%S)
-      mkdir /sdcard/htdocs
-      echo "<?php phpinfo(); ?>" > /sdcard/htdocs/index.php
-      cp .htaccess /sdcard/htdocs
+    if [ "$resp" == "y" -o -z "$resp" ]; then
+      [ ! -d $backup ] && mkdir $backup
+      mv $default $backup/htdocs-$(date +%d-%m-%Y:%H:%M:%S)
+      create_htdocs 
+     
+    elif [ "$resp" == "n" -o -z "$resp" ]; then
+      rm -rf $default
+      create_htdocs
+    else
+      echo -e "\e[0mInvalid option, only options '\e[1;33my\e[0m' and '\e[1;33mn\e[0m' are allowed.\e"
+      check_access_internal
     fi
 
-  elif [ ! -d /sdcard/htdocs ]; then
-    mkdir /sdcard/htdocs
-    echo "<?php phpinfo(); ?>" > /sdcard/htdocs/index.php
-    cp .htaccess /sdcard/htdocs
+  else
+    create_htdocs
   fi
 
   sleep 2
@@ -252,7 +264,7 @@ menu() {
   clear
   banner "Menu IWS"
 
-  echo -e "\n\e[1;32m\t\tV$version\e[0m"
+  echo -e "\n\e[1;32m\tFont: Remo773\tVersion: $version\e[0m"
   
   echo -e "\n\e[1;36mInstall and configure web server according to your wishes.\e[0m\n"
   
@@ -264,9 +276,8 @@ menu() {
   done
   
   echo -ne "\nOption: "; read option
-  echo $option
   
-  [ -z "$option" -o "$option" -gt 5 -o "$option" -eq 0 ] && menu
+  [ -z "$option" ] || [ $option -gt 5 ] || [ $option -eq 0 ] && menu
   [ "$option" == "1" ] && req_install
   [ "$option" == "2" ] && configure_apache
   [ "$option" == "3" ] && configure_phpmyadmin
@@ -277,7 +288,7 @@ menu() {
 
 
 main() {
-  [ ! -n "$(dpkg -l | grep figlet)" ] && { apt update && apt upgrade -yq && apt install figlet -yq; }
+  [ ! -n "$(dpkg -l | grep figlet)" ] && { apt update && apt upgrade && apt install figlet -yq; }
   banner "Checking"
   echo -e "\n\e[1;36mChecking requirements to run the program correctly...\e[0m"
   sleep 1
