@@ -7,15 +7,24 @@
 # 
 #
 
-packages=("php" "php-apache" "phpmyadmin" "mariadb" "apache2" "openssl" "openssl-tool")
-version="0.0.5"
-default=/sdcard/htdocs
-backup=/sdcard/htdocs_backup
+PACKAGES_REQUIRED=(
+	"php" 
+	"php-apache" 
+	"phpmyadmin" 
+	"mariadb" 
+	"apache2" 
+	"openssl" 
+	"openssl-tool"
+)
+
+SCRIPT_VERSION="0.0.5"
+DEFAULT_DIR="/sdcard/htdocs"
+BACKUP_DIR="/sdcard/htdocs_backup"
 
 # BANNER
 banner() {
-  text="$1"
   clear
+  text="$1"
   figlet -f Remo773.flf $text
 }
 
@@ -32,9 +41,9 @@ check_os() {
 
 # CRIA O DIRETÓRIO HTDOCS
 create_htdocs() {
-  mkdir $default
-  echo "<?php phpinfo(); ?>" > $default/index.php
-  cp .htaccess $default
+  [ ! -d "$DEFAULT_DIR" ] && mkdir "$DEFAULT_DIR"
+
+  cp .htaccess index.php "$DEFAULT_DIR"
 }
 
 # VERIFICA ACESSO A MEMORIA INTERNA
@@ -52,16 +61,16 @@ check_access_internal() {
   echo -e "\e[0m\nAllow granted internal memory...[\e[1;32mOk\e[0m]\n"
   sleep 2
 
-  if [ -d $default ]; then
+  if [ -d "$DEFAULT_DIR" ]; then
     echo -ne "\e[0mThe '\e[1;33mhtdocs\e[0m' Project Folder was found, do you want to back it up? \e[1;33my\e[0m/\e[1;33mn\e[0m [y] : \e[0m"; read resp
     
     if [ "$resp" == "y" -o -z "$resp" ]; then
-      [ ! -d $backup ] && mkdir $backup
-      mv $default $backup/htdocs-$(date +%d-%m-%Y:%H:%M:%S)
+      [ ! -d "$BACKUP_DIR" ] && mkdir "$BACKUP_DIR"
+      mv "$DEFAULT_DIR" "$BACKUP_DIR"/htdocs-$(date +%d-%m-%Y:%H:%M:%S)
       create_htdocs 
      
     elif [ "$resp" == "n" -o -z "$resp" ]; then
-      rm -rf $default
+      rm -rf "$DEFAULT_DIR"
       create_htdocs
     else
       echo -e "\e[0mInvalid option, only options '\e[1;33my\e[0m' and '\e[1;33mn\e[0m' are allowed.\e"
@@ -77,7 +86,7 @@ check_access_internal() {
 
 # VERIFICA SE OS PACOTES NECESSÁRIOS FORAM INSTALADOS
 check_packages() {
-  for package in ${packages[*]}; do
+  for package in ${PACKAGES_REQUIRED[*]}; do
     if [ -z "$(dpkg -l | grep $package)" ]; then
       echo -e "\e[0mRequired package '\e[1;33m$package\e[0m' is not present in the system, please use the first menu option to install all necessary packages, Press the '\e[1;33mENTER\e[0m' key to return to the menu...\n\e[0m"; read
       sleep 1
@@ -94,7 +103,7 @@ req_install() {
   banner "Packages"
   echo -e "\n\e[1;36mInstalling packages necessary to run the program...\n\e[0m"
 	
-  for package in ${packages[*]}; do
+  for package in ${PACKAGES_REQUIRED[*]}; do
     if [ ! -n "$(dpkg -l | grep $package)" ]; then
       apt install $package -yq
     fi
@@ -111,7 +120,7 @@ uninstall() {
   banner "Uninstall"
   echo -e "\n\e[1;36mUninstalling all packages...\e[0m\n"
 
-  for package in ${packages[*]}; do
+  for package in ${PACKAGES_REQUIRED[*]}; do
     if [ -n "$(dpkg -l | grep $package)" ]; then
       echo -e "\e[1;32mUninstalling package $package...\e[0m\n"
       apt purge $package -y
