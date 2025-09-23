@@ -46,42 +46,33 @@ create_htdocs() {
   cp .htaccess index.php "$DEFAULT_DIR"
 }
 
-# VERIFICA ACESSO A MEMORIA INTERNA
-check_access_internal() { 
-  res=$(ls /sdcard &> /dev/null)
-
-  while [ $? -eq 2 ] ; do
-    echo -e "\e[0m\nAllow access to internal memory...[\e[1;31mNone\e[0m]"
-
-    termux-setup-storage
-    sleep 3
-    res=$(ls /sdcard &> /dev/null)
-  done
-
-  echo -e "\e[0m\nAllow granted internal memory...[\e[1;32mOk\e[0m]\n"
-  sleep 2
-
-  if [ -d "$DEFAULT_DIR" ]; then
-    echo -ne "\e[0mThe '\e[1;33mhtdocs\e[0m' Project Folder was found, do you want to back it up? \e[1;33my\e[0m/\e[1;33mn\e[0m [y] : \e[0m"; read resp
+# Verifica acesso a memoria interna
+check_storage_access() {
+    echo -e "\033[1;36m\nVerificando acesso ao armazenamento...\033[0m\n"
+    sleep 2
     
-    if [ "$resp" == "y" -o -z "$resp" ]; then
-      [ ! -d "$BACKUP_DIR" ] && mkdir "$BACKUP_DIR"
-      mv "$DEFAULT_DIR" "$BACKUP_DIR"/htdocs-$(date +%d-%m-%Y:%H:%M:%S)
-      create_htdocs 
-     
-    elif [ "$resp" == "n" -o -z "$resp" ]; then
-      rm -rf "$DEFAULT_DIR"
-      create_htdocs
-    else
-      echo -e "\e[0mInvalid option, only options '\e[1;33my\e[0m' and '\e[1;33mn\e[0m' are allowed.\e"
-      check_access_internal
+    # Verificação rápida inicial
+    if ls /sdcard &>/dev/null; then
+        echo -e "\033[1;32m✓ Acesso imediato confirmado\033[0m"
+        sleep 2
+        return 0
     fi
-
-  else
-    create_htdocs
-  fi
-
-  sleep 2
+    
+    # Se falhar, solicitar permissão uma vez
+    echo -e "\033[1;33mSolicitando permissão...\033[0m"
+    termux-setup-storage
+    sleep 5
+    
+    # Verificação final
+    if ls /sdcard &>/dev/null; then
+        echo -e "\033[1;32m✓ Acesso concedido após solicitação\033[0m"
+        sleep 2
+        return 0
+    else
+        echo -e "\033[1;31m✗ Acesso ainda negado após solicitação\033[0m"
+		sleep 2        
+        return 1
+    fi
 }
 
 # VERIFICA SE OS PACOTES NECESSÁRIOS FORAM INSTALADOS
@@ -273,7 +264,7 @@ menu() {
   clear
   banner "Menu IWS"
 
-  echo -e "\n\e[1;32m\tFont: Remo773\tVersion: $version\e[0m"
+  echo -e "\n\e[1;32m\tFont: Remo773\tVersion: $SCRIPT_VERSION\e[0m"
   
   echo -e "\n\e[1;36mInstall and configure web server according to your wishes.\e[0m\n"
   
@@ -302,7 +293,7 @@ main() {
   echo -e "\n\e[1;36mChecking requirements to run the program correctly...\e[0m"
   sleep 1
   check_os
-  check_access_internal
+  check_storage_access
   menu
 }
 main
