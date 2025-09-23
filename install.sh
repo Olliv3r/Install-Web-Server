@@ -1,68 +1,92 @@
 #!/usr/bin/env bash
 #
-# Instala e configura um servidor web completo no ambiente termux
+# Instala e configura um servidor web completo no ambiente Termux
 #
-# Author: Oliver Silva, 8 de julho de 2024
-#
-# 
+# Autor: Oliver Silva, 8 de julho de 2024
 #
 
+# Pacotes necessários
 PACKAGES_REQUIRED=(
-	"php" 
-	"php-apache" 
-	"phpmyadmin" 
-	"mariadb" 
-	"apache2" 
-	"openssl" 
-	"openssl-tool"
+    "php"
+    "php-apache"
+    "phpmyadmin"
+    "mariadb"
+    "apache2"
+    "openssl"
+    "openssl-tool"
 )
 
-SCRIPT_VERSION="0.0.5"
+# Configurações do script
+SCRIPT_VERSION="0.0.6"
 DEFAULT_DIR="/sdcard/htdocs"
 BACKUP_DIR="/sdcard/htdocs_backup"
 
-# BANNER
+# EXIBE BANNER ESTILIZADO
 banner() {
-  clear
-  text="$1"
-  figlet -f Remo773.flf $text
+    clear
+    figlet -f Remo773.flf "$1" 2>/dev/null || echo "=== $1 ==="
 }
 
-# VERIFICA SE RODA NO AMBIENTE TERMUX
+# VERIFICA SE ESTÁ RODANDO NO AMBIENTE TERMUX
 check_os() {
-  if [ -z "$TERMUX_APP__PACKAGE_NAME" ]; then
-    echo -e "\e[0mOnly compatible with the Termux environment...[\e[1;31mNone\e[0m]"
-    exit
-  fi
+    if [ -z "$TERMUX_APP__PACKAGE_NAME" ]; then
+        echo -e "\e[0mSomente compatível com o ambiente Termux...[\e[1;31mFalhou\e[0m]"
+        exit
+    fi
 
-  echo -e "\n\e[0mEnvironment compatible with the program...[\e[1;32mOk\e[0m]"
-  sleep 1
+    echo -e "\n\e[0mAmbiente compatível com o programa...[\e[1;32mOk\e[0m]"
+    sleep 1
 }
 
-# CRIA O DIRETÓRIO HTDOCS
+# REMOVER TODOS OS ARQUIVOS E DIRETÓRIOS CRIADOS PELO SCRIPT
+cleanup_script() {
+    echo -e "\nLimpando arquivos do script..."
+
+    # Remover configurações do Apache
+    rm -rf "$PREFIX/etc/apache2/httpd.conf"
+    rm -rf "$PREFIX/etc/apache2/extra/"*
+    rm -rf "$PREFIX/etc/apache2/ssl/"
+
+    # Remover configuração do PHPMyAdmin
+    rm -rf "$PREFIX/etc/phpmyadmin/config.inc.php"
+
+    # Remover diretório web (pergunta por confirmação)
+    if [ -d "/sdcard/htdocs" ]; then
+        read -p "❓ Remover diretório /sdcard/htdocs? [s/N]: " resp
+        [[ $resp =~ ^[Ss]$ ]] && rm -rf "/sdcard/htdocs"
+    fi
+
+    echo -e "\n✅ Limpeza concluída!"
+    echo -e "\n\e[0mPressione \e[1;33mENTER\e[0m para retornar ao menu...\e[0m\n"; read
+
+    menu
+}
+
+# CRIA O DIRETÓRIO HTDOCS E COPIA ARQUIVOS
 create_htdocs() {
-  [ ! -d "$DEFAULT_DIR" ] && mkdir "$DEFAULT_DIR"
+    mkdir -p "$DEFAULT_DIR" && cp .htaccess index.php "$DEFAULT_DIR" 2>/dev/null
 
-  cp .htaccess index.php "$DEFAULT_DIR"
+    [ -d "$DEFAULT_DIR" ] && echo -e "\n✅ Diretório de projetos criado em \e[1;33m$DEFAULT_DIR\e[0m...[\e[1;32mOK\e[0m]"
+
 }
 
-# Verifica acesso a memoria interna
+# VERIFICA ACESSO À MEMÓRIA INTERNA
 check_storage_access() {
     echo -e "\033[1;36m\nVerificando acesso ao armazenamento...\033[0m\n"
     sleep 2
-    
+
     # Verificação rápida inicial
     if ls /sdcard &>/dev/null; then
-        echo -e "\033[1;32m✓ Acesso imediato confirmado\033[0m"
+        echo -e "\e[0mAcesso imediato confirmado...[\e[1;32mOK\e[0m]"
         sleep 2
         return 0
     fi
-    
+
     # Se falhar, solicitar permissão uma vez
     echo -e "\033[1;33mSolicitando permissão...\033[0m"
     termux-setup-storage
     sleep 5
-    
+
     # Verificação final
     if ls /sdcard &>/dev/null; then
         echo -e "\033[1;32m✓ Acesso concedido após solicitação\033[0m"
@@ -70,230 +94,220 @@ check_storage_access() {
         return 0
     else
         echo -e "\033[1;31m✗ Acesso ainda negado após solicitação\033[0m"
-		sleep 2        
+        sleep 2
         return 1
     fi
 }
 
 # VERIFICA SE OS PACOTES NECESSÁRIOS FORAM INSTALADOS
 check_packages() {
-  for package in ${PACKAGES_REQUIRED[*]}; do
-    if [ -z "$(dpkg -l | grep $package)" ]; then
-      echo -e "\e[0mRequired package '\e[1;33m$package\e[0m' is not present in the system, please use the first menu option to install all necessary packages, Press the '\e[1;33mENTER\e[0m' key to return to the menu...\n\e[0m"; read
-      sleep 1
-      menu
-    fi
-  done
-
-  echo -e "\e[0mChecking packages needed for the program...[\e[1;32mOk\e[0m]\e[0m"
+    for package in "${PACKAGES_REQUIRED[@]}"; do
+        dpkg -l "$package" &>/dev/null || return 1       
+    done
+    
+    return 0
 }
 
+# Verifica a existencia de um pacote
+check_package() {
+	if [ -n "$(dpkg -l "$1" | grep "$1")" ]; then
+		return 0
+	fi
 
-# INSTALA TODOS OS PACOTES NECESSÁRIOS
+	return 1
+}
+
+# DESINSTALA OS PROGRAMAS
+req_uninstall() {
+	banner "Pacotes"
+
+	echo -e "\033[1;36m\nDesinstalando pacotes...\033[0m\n"
+
+	for package in "${PACKAGES_REQUIRED[@]}"; do
+		if check_package "$package" 2>/dev/null; then
+			apt purge "$package" -yq
+
+			if ! check_package "$package" 2>/dev/null; then
+				echo -e "\e[0m\nPacote $package desinstalado...[\e[1;32mOK\e[0m]"
+			else
+				echo -e "\e[0m\nNão é possível desinstalar o \e[1;33m$package\e[0m...\n"
+			fi
+			
+		else
+			echo -e "\n\e[0mO pacote \e[1;33m$package\e[0m já foi desinstalado antes...\e[0m"
+		fi
+	done
+
+    echo -e "\e[0mPressione \e[1;33mENTER\e[0m para retornar ao menu...\e[0m"; read
+    menu
+}
+
+# INSTALA OS PROGRAMAS
 req_install() {
-  banner "Packages"
-  echo -e "\n\e[1;36mInstalling packages necessary to run the program...\n\e[0m"
+	banner "Pacotes"
+
+	echo -e "\033[1;36m\nInstalando pacotes...\033[0m\n"
+
+	for package in "${PACKAGES_REQUIRED[@]}"; do
+		if ! check_package "$package" 2>/dev/null; then
+			apt install "$package" -yq
+
+			if check_package "$package" 2>/dev/null; then
+				echo -e "\e[0m\nPacote $package instalado...[\e[1;32mOK\e[0m]\n"
+			else
+				echo -e "\e[0m\nNão é possível instalar o \e[1;33m$package\e[0m...\n"
+			fi
+						
+		else
+			echo -e "\n\e[0mO pacote \e[1;33m$package\e[0m já está instalado!"
+		fi
+	done
 	
-  for package in ${PACKAGES_REQUIRED[*]}; do
-    if [ ! -n "$(dpkg -l | grep $package)" ]; then
-      apt install $package -yq
-    fi
-  done
-
-  sleep 2
-  echo -e "\e[0m\e[1;32mThe packages were installed successfully.\e\n[0m"
-  echo -e "\e[0mPress \e[1;33mENTER\e[0m to return to the menu...\e[0m"; read
-  menu
-}
-
-# DESINSTALA TODOS OS PROGRAMAS
-uninstall() {
-  banner "Uninstall"
-  echo -e "\n\e[1;36mUninstalling all packages...\e[0m\n"
-
-  for package in ${PACKAGES_REQUIRED[*]}; do
-    if [ -n "$(dpkg -l | grep $package)" ]; then
-      echo -e "\e[1;32mUninstalling package $package...\e[0m\n"
-      apt purge $package -y
-    else
-      echo -e "\e[0mThe \e[1;33m$package\e[0m package has already been uninstalled before.\e[0m\n"
-    fi
-  done
-  apt autoremove -y && apt clean
-
-  sleep 2
-  echo -e "\n\e[1;32mAll packages have been uninstalled, press ENTER to return to the menu...\e[0m\n"
-  read
-  menu
+    echo -e "\n\e[0mPressione \e[1;33mENTER\e[0m para retornar ao menu...\e[0m"; read
+    menu
 }
 
 # MATA UM PROCESSO EM SEGUNDO PLANO
 kill_process() {
-  process_name="$1"
-
-  [ -n "$(ps -e | grep $process_name)" ] && pkill -f /data/data/com.termux/files/usr/bin/$process_name
-  sleep 2
+    pkill -f "$1" 2>/dev/null
 }
-
 
 # CONFIGURA O APACHE
 configure_apache() {
-  banner "Apache"
-  echo
-  check_packages  
-    
-  echo -e "\n\e[1;36mConfiguring Apache to run HTML pages...\e[0m"
-  sleep 2
- 
-  # conf httpd
-  if [ -f $PREFIX/etc/apache2/httpd.conf ]; then
-    if cmp -s "./apache/httpd.conf" "$PREFIX/etc/apache2/httpd.conf"; then
-      echo -e "\n\e[0mApache httpd [\e[1;32mOk\e[0m]\n" 
-    else
-      echo -e "\n\e[0mModifying apache httpd...\n"
-      cp ./apache/httpd.conf $PREFIX/etc/apache2/httpd.conf
+    banner "Apache"
+    if check_packages; then
+    	echo -e "\e[0m\nVerificando pacotes necessários para o programa...[\e[1;32mOk\e[0m]\e[0m"
+    	sleep 1
+	else
+		echo -e "\n\e[0mPacote necessário não está presente no sistema, por favor use a primeira opção do menu para instalar todos os pacotes necessários, Pressione a tecla '\e[1;33mENTER\e[0m' para retornar ao menu...\n\e[0m"; read
+		menu
     fi
-  else
-    echo -e "\n\e[0mCreating apache httpd...\n"
-    cp ./apache/httpd.conf $PREFIX/etc/apache2/httpd.conf
-  fi
 
-  # conf extra
-  for program_extra_file in ./extra/*; do
-    if [ -f $PREFIX/etc/apache2/extra/$(basename $program_extra_file) ]; then
-      if cmp -s "$program_extra_file" "$PREFIX/etc/apache2/extra/$(basename $program_extra_file)"; then
-        echo -e "\e[0mApache extra $(echo $(basename $program_extra_file) | cut -d '.' -f1) [\e[1;32mOk\e[0m]\n"
-      else
-        echo -e "\e[0mModifying apache $(echo $(basename $program_extra_file) | cut -d '.' -f1)....\n"
-        cp $program_extra_file $PREFIX/etc/apache2/extra
-      fi
-    else
-      echo -e "\e[0mCreating apache $(echo $(basename $program_extra_file) | cut -d '.' -f1)...\n"
-      cp ./extra/$(basename $program_extra_file) $PREFIX/etc/apache2/extra
-    fi
-  done
+    echo -e "\n\e[1;36mConfigurando Apache para executar páginas HTML...\e[0m"
 
-  # conf ssl
-  if  [ ! -d $PREFIX/etc/apache2/ssl ]; then
-    echo -e "\e[0mCreating apache ssl crt e key...\n"
-    mkdir $PREFIX/etc/apache2/ssl
-    chmod 700 $PREFIX/etc/apache2/ssl
-    cp ./ssl/* $PREFIX/etc/apache2/ssl
-  else
-    echo -e "\e[0mModifying apache ssl crt e key...\n"
-    cp ./ssl/* $PREFIX/etc/apache2/ssl
-  fi
- 
-  # phpmyadmin
-  if [ -f $PREFIX/etc/phpmyadmin/config.inc.php ]; then
-    if cmp -s "./phpmyadmin/config.inc.php" "$PREFIX/etc/phpmyadmin/config.inc.php"; then
-      echo -e "\e[0mPhpMyAdmin config.inc [\e[1;32mOk\e[0m]"
-    else
-      echo -e "\e[0mModifying config.inc..."
-      cp ./phpmyadmin/config.inc.php $PREFIX/etc/phpmyadmin/config.inc.php
-    fi
-  else
-    echo -e "\e[0mCreating config.inc..."
-    cp ./phpmyadmin/config.inc.php $PREFIX/etc/phpmyadmin/config.inc.php
-  fi
+    # Função auxiliar para copiar se diferente
+    copy_if_different() {
+        local src="$1" dst="$2"
+        if [ ! -f "$dst" ] || ! cmp -s "$src" "$dst"; then
+            mkdir -p "$(dirname "$dst")"
+            cp "$src" "$dst" && echo -e "\n✅ $(basename "$src")"
+        fi
+    }
 
-   echo -e "\e\n[0mApache has been configured, press \e[1;33mENTER\e[0m to return to the menu...\n"; read
-   menu
+    # Copia todos os arquivos
+    copy_if_different "./apache/httpd.conf" "$PREFIX/etc/apache2/httpd.conf"
+
+    for file in ./extra/*; do
+        [ -f "$file" ] && copy_if_different "$file" "$PREFIX/etc/apache2/extra/$(basename "$file")"
+    done
+
+    mkdir -p "$PREFIX/etc/apache2/ssl"
+    chmod 700 "$PREFIX/etc/apache2/ssl"
+    cp ./ssl/* "$PREFIX/etc/apache2/ssl/" 2>/dev/null && echo -e "\n✅ SSL"
+
+    copy_if_different "./phpmyadmin/config.inc.php" "$PREFIX/etc/phpmyadmin/config.inc.php"
+
+    create_htdocs
+
+    echo -e "\e\n[0mApache foi configurado, pressione \e[1;33mENTER\e[0m para retornar ao menu...\n"; read
+    menu
 }
 
 # CONFIGURA O PHPMYADMIN
 configure_phpmyadmin() {
-  banner "PhpMyAdmin"
-  echo
-  check_packages
-  
-  echo -e "\n\e[1;36mRunning mariadbd in the background, please wait...\e[0m"
-  kill_process "mariadbd"
-  mariadbd-safe -u root > /dev/null &
-  sleep 6
-  
-  echo -e "\n\e[1;36mConfiguring access to phpmyadmin..\n\e[0m"
-  sleep 1
-  
-  echo -ne "User name: " ; read username
-  echo -ne "Password: " ; read password
-  echo -ne "\n\e[1;36mProcessing the command, please wait...\e[0m\n"
-  sleep 1
-  
-  if [ -z "$username" -o -z "$password" ]; then
-    echo -e "\n\e[1;31mPanel access data is required.\n\e[0m"
-    echo -e "\e[1;33mPress ENTER to return to configuring access.\e[0m"
-    read
-    configure_phpmyadmin
-  fi
-   
-  user=$(mariadb -u root -D mysql -e "SELECT user FROM user WHERE user='$username'")
-  
-  if [ -n "$user" ]; then
-    echo -e "\n\e[1;33mThis user already exists, try another username. Press ENTER to try again.\n\e[0m"
-    read
-    configure_phpmyadmin
-  fi
-  
-  mariadb -u root -D mysql -e "CREATE USER '$username'@'localhost' IDENTIFIED BY '$password';GRANT ALL PRIVILEGES ON * . * TO '$username'@'localhost';FLUSH PRIVILEGES;"
-  
-  [ -d $PREFIX/etc/phpmyadmin ] && cp phpmyadmin/* $PREFIX/etc/phpmyadmin
-  sleep 2
+    banner "PhpMyAdmin"
+    echo
+    check_packages
 
-  echo -e "\n\e[1;32mYour new login to the phpmyadmin panel:\e[0m\n"
-  echo -e "\e[0mUser name: \e[1;32m$username\e[0m"
-  echo -e "\e[0mPassword: \e[1;32m$password\e[0m"
-  echo -e "\e[0mLink: \e[1;32mhttps://localhost:8443/phpmyadmin\n\e[0m"
-  echo -e "\e[0mDirectory project: \e[1;32m/sdcard/htdocs\n\e[0m"
-  echo -e "\e[0mStart the mariadb server with: \e[1;32mmariadbd-safe -u $username &\n\e[0m"
-  echo -e "\e[0mStop mariadb server with: \e[1;32mpkill -f /data/data/com.termux/files/usr/bin/mariadbd\n\e[0m"
-  
-  kill_process "mariadbd"
-  echo -e "phpmyadmin has been configured, press ENTER to return to the menu...\n"; read
-  menu
+    echo -e "\n\e[1;36mExecutando mariadbd em segundo plano, por favor aguarde...\e[0m"
+    kill_process "mariadbd"
+    mariadbd-safe -u root > /dev/null &
+    sleep 6
 
+    echo -e "\n\e[1;36mConfigurando acesso ao phpmyadmin..\n\e[0m"
+    sleep 1
+
+    echo -ne "Nome de usuário: " ; read username
+    echo -ne "Senha: " ; read password
+    echo -ne "\n\e[1;36mProcessando o comando, por favor aguarde...\e[0m\n"
+    sleep 1
+
+    if [ -z "$username" -o -z "$password" ]; then
+        echo -e "\n\e[1;31mDados de acesso ao painel são obrigatórios.\n\e[0m"
+        echo -e "\e[1;33mPressione ENTER para retornar à configuração de acesso.\e[0m"
+        read
+        configure_phpmyadmin
+    fi
+
+    user=$(mariadb -u root -D mysql -e "SELECT user FROM user WHERE user='$username'")
+
+    if [ -n "$user" ]; then
+        echo -e "\n\e[1;33mEste usuário já existe, tente outro nome de usuário. Pressione ENTER para tentar novamente.\n\e[0m"
+        read
+        configure_phpmyadmin
+    fi
+
+    mariadb -u root -D mysql -e "CREATE USER '$username'@'localhost' IDENTIFIED BY '$password';GRANT ALL PRIVILEGES ON * . * TO '$username'@'localhost';FLUSH PRIVILEGES;"
+
+    [ -d $PREFIX/etc/phpmyadmin ] && cp phpmyadmin/* $PREFIX/etc/phpmyadmin
+    sleep 2
+
+    echo -e "\n\e[1;32mSeu novo login para o painel phpmyadmin:\e[0m\n"
+    echo -e "\e[0mNome de usuário: \e[1;32m$username\e[0m"
+    echo -e "\e[0mSenha: \e[1;32m$password\e[0m"
+    echo -e "\e[0mLink: \e[1;32mhttps://localhost:8443/phpmyadmin\n\e[0m"
+    echo -e "\e[0mDiretório do projeto: \e[1;32m/sdcard/htdocs\n\e[0m"
+    echo -e "\e[0mInicie o servidor mariadb com: \e[1;32mmariadbd-safe -u $username &\n\e[0m"
+    echo -e "\e[0mPare o servidor mariadb com: \e[1;32mpkill -f /data/data/com.termux/files/usr/bin/mariadbd\n\e[0m"
+
+    kill_process "mariadbd"
+    echo -e "phpmyadmin foi configurado, pressione ENTER para retornar ao menu...\n"; read
+    menu
 }
 
+# FUNÇÃO DE SAÍDA
 goodbye() {
-  kill_process "mariadbd"
-  echo -e "\n\n\e[1;31mProgram interrupt.\e[0m\n"; exit; 
+    kill_process "mariadbd" && echo -e "\n\n\e[1;31mPrograma interrompido.\e[0m\n"; exit;
 }
 
+# MENU PRINCIPAL
 menu() {
-  trap "goodbye" SIGTSTP SIGINT
-  clear
-  banner "Menu IWS"
+    trap "goodbye" SIGTSTP SIGINT
+    clear
+    banner "Menu IWS"
 
-  echo -e "\n\e[1;32m\tFont: Remo773\tVersion: $SCRIPT_VERSION\e[0m"
-  
-  echo -e "\n\e[1;36mInstall and configure web server according to your wishes.\e[0m\n"
-  
-  n=1
-  
-  for option in "Install Required Packages" "Configure Apache" "Configure PhpMyAdmin" "Uninstall programs" "Exit"; do
-    echo -e "\e[1;32m[\e[1;36m$n\e[1;32m] $option\e[0m"
-    n=$((n +1))
-  done
-  
-  echo -ne "\nOption: "; read option
-  
-  [ -z "$option" ] || [ $option -gt 5 ] || [ $option -eq 0 ] && menu
-  [ "$option" == "1" ] && req_install
-  [ "$option" == "2" ] && configure_apache
-  [ "$option" == "3" ] && configure_phpmyadmin
-  [ "$option" == "4" ] && uninstall
-  [ "$option" == "5" ] && exit
+    echo -e "\n\e[1;32m\tFonte: Remo773\tVersão: $SCRIPT_VERSION\e[0m"
 
+    echo -e "\n\e[1;36mInstale e configure o servidor web de acordo com suas preferências.\e[0m\n"
+
+    n=1
+
+    for option in "Instalar Pacotes Necessários" "Configurar Apache" "Configurar PhpMyAdmin" "Desinstalar programas" "Limpar arquivos" "Sair"; do
+        echo -e "\e[1;32m[\e[1;36m$n\e[1;32m] $option\e[0m"
+        n=$((n +1))
+    done
+
+    echo -ne "\nOpção: "; read option
+
+    case "$option" in
+		1) req_install;;
+		2) configure_apache;;
+		3) configure_phpmyadmin;;
+		4) req_uninstall;;
+		5) cleanup_script;;
+		6) exit;;
+		*) echo -e "\nOpção inválida!\n" && sleep 1 && menu;;
+    esac
 }
 
-
+# FUNÇÃO PRINCIPAL
 main() {
-  [ ! -n "$(dpkg -l | grep figlet)" ] && { apt update && apt upgrade && apt install figlet -yq; }
-  banner "Checking"
-  echo -e "\n\e[1;36mChecking requirements to run the program correctly...\e[0m"
-  sleep 1
-  check_os
-  check_storage_access
-  menu
+    ! check_package "figlet" && { apt update && apt upgrade && apt install figlet -yq; }
+    
+    banner "Verificando"
+    echo -e "\n\e[1;36mVerificando requisitos para executar o programa corretamente...\e[0m"
+    sleep 1
+    check_os && check_storage_access && menu
 }
+
 main
