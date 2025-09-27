@@ -62,7 +62,8 @@ Siga exatamente esta ordem no menu do script:
 [2] ⚙️  Configurar Apache para projetos
 [3] 🗃️  Configurar phpMyAdmin (Opcional)
 [4] 🗑️  Desinstalar todos os pacotes
-[5] 🚪 Sair do programa
+[5] 🗑  Limpar arquivos (Opcional)
+[6] 🚪 Sair do programa
 ```
 
 🗂️ Estrutura do Projeto
@@ -72,7 +73,7 @@ Após a instalação, sua estrutura será:
 ```
 /sdcard/htdocs/                 # Pasta principal dos projetos
 ├── index.php                   # Painel de controle
-├── phpmyadmin/                 # Painel de administração
+├── .htaccess                 	# Arquivo de configuração
 ├── projeto1/                   # Seus projetos PHP
 ├── projeto2/
 └── ...
@@ -80,13 +81,13 @@ Após a instalação, sua estrutura será:
 
 🌐 Acesso Web
 
-· Painel Principal: http://localhost:8080
-· phpMyAdmin: http://localhost:8080/phpmyadmin
-· Seus Projetos: http://localhost:8080/nome-do-projeto
+- Painel Principal: http://localhost:8080
+- phpMyAdmin: http://localhost:8080/phpmyadmin
+- Seus Projetos: http://localhost:8080/nome-do-projeto
 
 ⚙️ Gerenciamento de Serviços
 
-Apache
+Apache:
 
 ```bash
 # Iniciar Apache
@@ -102,37 +103,34 @@ apachectl restart
 apachectl status
 ```
 
-MariaDB
+MariaDB:
 
 ```bash
 # Iniciar MariaDB
-mariadbd-safe -u $(whoami) &
+mariadbd-safe -u root &
 
 # Parar MariaDB
 pkill -f mariadbd
 
 # Conectar ao banco
-mysql -u root
+mariadb -u root
 
 # Ver processos
 ps aux | grep mariadbd
 ```
 
-🔧 Configurações Especiais
+### 🔧 Configurações Especiais
 
-URL Amigável (mod_rewrite)
+URL Amigável (mod_rewrite):
+- Habilitado automaticamente para todos os projetos.
 
-Habilitado automaticamente para todos os projetos.
+Diretório Personalizado:
+- Projetos armazenados em /sdcard/htdocs/ para fácil acesso.
 
-Diretório Personalizado
+Permissões:
+- Configuradas automaticamente para funcionar sem root.
 
-Projetos armazenados em /sdcard/htdocs/ para fácil acesso.
-
-Permissões
-
-Configuradas automaticamente para funcionar sem root.
-
-🗑️ Desinstalação
+### 🗑️ Desinstalação:
 
 Para remover completamente:
 
@@ -140,9 +138,9 @@ Para remover completamente:
 2. Selecione a Opção 4 - Desinstalar pacotes
 3. Confirme a desinstalação
 
-❗ Solução de Problemas
+### ❗ Solução de Problemas
 
-Apache não inicia
+Apache não inicia:
 
 ```bash
 # Verificar erro
@@ -152,7 +150,7 @@ apachectl configtest
 netstat -tulpn
 ```
 
-MariaDB não conecta
+MariaDB não conecta:
 
 ```bash
 # Verificar se está rodando
@@ -165,7 +163,7 @@ mariadbd-safe -u $(whoami) &
 mysql -u root -h 127.0.0.1
 ```
 
-Permissão negada
+Permissão negada:
 
 ```bash
 # Dar permissão à pasta htdocs
@@ -173,17 +171,17 @@ chmod 755 /sdcard/htdocs
 chmod 644 /sdcard/htdocs/*.php
 ```
 
-🎁 Recursos Incluídos
+### 🎁 Recursos Incluídos
 
-· ✅ Hospedagem local de projetos PHP
-· ✅ Painel phpMyAdmin integrado
-· ✅ URL amigável habilitada
-· ✅ Configuração automática do Apache
-· ✅ Script de desinstalação completo
-· ✅ Interface colorida e amigável
-· ✅ Suporte a MariaDB nativo
+- [-] Hospedagem local de projetos PHP
+- [-] Painel phpMyAdmin integrado
+- [-] URL amigável habilitada
+- [-] Configuração automática do Apache
+- [-] Script de desinstalação completo
+- [-] Interface colorida e amigável
+- [-] Suporte a MariaDB nativo
 
-📞 Suporte
+### 📞 Suporte
 
 Encontrou problemas?
 
