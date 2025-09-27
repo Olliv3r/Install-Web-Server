@@ -64,9 +64,14 @@ cleanup_script() {
 
 # CRIA O DIRETÓRIO HTDOCS E COPIA ARQUIVOS
 create_htdocs() {
-    mkdir -p "$DEFAULT_DIR" && cp .htaccess index.php "$DEFAULT_DIR" 2>/dev/null
-
-    [ -d "$DEFAULT_DIR" ] && echo -e "\n✅ Diretório de projetos criado em \e[1;33m$DEFAULT_DIR\e[0m...[\e[1;32mOK\e[0m]"
+	if [ ! -d "$DEFAULT_DIR" ]; then
+		mkdir -p "$DEFAULT_DIR"
+		cp .htaccess index.php "$DEFAULT_DIR" 2>/dev/null
+		echo -e "\n✅ Diretório de projetos criado em \e[1;33m$DEFAULT_DIR\e[0m...[\e[1;32mOK\e[0m]"
+	else
+		cp apache/.htaccess apache/index.php "$DEFAULT_DIR" 2>/dev/null
+    	echo -e "\n✅ Diretório de projetos existente em \e[1;33m$DEFAULT_DIR\e[0m...[\e[1;32mOK\e[0m]"
+    fi
 
 }
 
@@ -217,7 +222,14 @@ configure_apache() {
 configure_phpmyadmin() {
     banner "PhpMyAdmin"
     echo
-    check_packages
+    
+    if check_packages; then
+     	echo -e "\e[0m\nVerificando pacotes necessários para o programa...[\e[1;32mOk\e[0m]\e[0m"
+     	sleep 1
+ 	else
+ 		echo -e "\n\e[0mPacote necessário não está presente no sistema, por favor use a primeira opção do menu para instalar todos os pacotes necessários, Pressione a tecla '\e[1;33mENTER\e[0m' para retornar ao menu...\n\e[0m"; read
+ 		menu
+     fi
 
     echo -e "\n\e[1;36mExecutando mariadbd em segundo plano, por favor aguarde...\e[0m"
     kill_process "mariadbd"
@@ -258,7 +270,8 @@ configure_phpmyadmin() {
     echo -e "\e[0mLink: \e[1;32mhttps://localhost:8443/phpmyadmin\n\e[0m"
     echo -e "\e[0mDiretório do projeto: \e[1;32m/sdcard/htdocs\n\e[0m"
     echo -e "\e[0mInicie o servidor mariadb com: \e[1;32mmariadbd-safe -u $username &\n\e[0m"
-    echo -e "\e[0mPare o servidor mariadb com: \e[1;32mpkill -f /data/data/com.termux/files/usr/bin/mariadbd\n\e[0m"
+    #echo -e "\e[0mPare o servidor mariadb com: \e[1;32mpkill -f /data/data/com.termux/files/usr/bin/mariadbd\n\e[0m"
+    echo -e "\e[0mPare o servidor mariadb com: \e[1;32mpkill -f mariadbd\n\e[0m"
 
     kill_process "mariadbd"
     echo -e "phpmyadmin foi configurado, pressione ENTER para retornar ao menu...\n"; read
@@ -267,7 +280,7 @@ configure_phpmyadmin() {
 
 # FUNÇÃO DE SAÍDA
 goodbye() {
-    kill_process "mariadbd" && echo -e "\n\n\e[1;31mPrograma interrompido.\e[0m\n"; exit;
+    kill_process "mariadbd" && echo -e "\n\n\e[1;31mPrograma encerrado.\e[0m\n"; exit;
 }
 
 # MENU PRINCIPAL
@@ -307,7 +320,17 @@ main() {
     banner "Verificando"
     echo -e "\n\e[1;36mVerificando requisitos para executar o programa corretamente...\e[0m"
     sleep 1
-    check_os && check_storage_access && menu
+
+	# Verifica a compatibilidade do sistema
+    check_os
+
+    # Verifica acesso ao armazenamento
+    if ! check_storage_access; then
+		echo -e "\n\e[0mAcesso a memoria ainda não permitido, permita o acesso manualmente com o comando '\e[1;33mtermux-setup-storage\e[0m' , Pressione a tecla '\e[1;33mENTER\e[0m' para retornar ao menu...\n\e[0m"; read
+    	menu
+    fi
+    menu
+
 }
 
 main
