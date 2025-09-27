@@ -173,13 +173,14 @@ chmod 644 /sdcard/htdocs/*.php
 
 ### 🎁 Recursos Incluídos
 
-- [-] Hospedagem local de projetos PHP
-- [-] Painel phpMyAdmin integrado
-- [-] URL amigável habilitada
-- [-] Configuração automática do Apache
-- [-] Script de desinstalação completo
-- [-] Interface colorida e amigável
-- [-] Suporte a MariaDB nativo
+- [x] Hospedagem local de projetos PHP
+- [x] Painel phpMyAdmin integrado
+- [x] URL amigável habilitada
+- [x] Configuração automática do Apache
+- [x] Script de desinstalação completo
+- [x] Interface colorida e amigável
+- [x] Suporte a MariaDB nativo
+- [ ] Em breve
 
 ### 📞 Suporte
 
