@@ -51,9 +51,9 @@ cleanup_script() {
     rm -rf "$PREFIX/etc/phpmyadmin/config.inc.php"
 
     # Remover diretório web (pergunta por confirmação)
-    if [ -d "/sdcard/htdocs" ]; then
-        read -p "❓ Remover diretório /sdcard/htdocs? [s/N]: " resp
-        [[ $resp =~ ^[Ss]$ ]] && rm -rf "/sdcard/htdocs"
+    if [ -d "$DEFAULT_DIR" ]; then
+        read -p "❓ Remover diretório $DEFAULT_DIR? [s/N]: " resp
+        [[ $resp =~ ^[Ss]$ ]] && rm -rf "$DEFAULT_DIR"
     fi
 
     echo -e "\n✅ Limpeza concluída!"
@@ -66,7 +66,7 @@ cleanup_script() {
 create_htdocs() {
 	if [ ! -d "$DEFAULT_DIR" ]; then
 		mkdir -p "$DEFAULT_DIR"
-		cp .htaccess index.php "$DEFAULT_DIR" 2>/dev/null
+		cp apache/.htaccess apache/index.php "$DEFAULT_DIR" 2>/dev/null
 		echo -e "\n✅ Diretório de projetos criado em \e[1;33m$DEFAULT_DIR\e[0m...[\e[1;32mOK\e[0m]"
 	else
 		cp apache/.htaccess apache/index.php "$DEFAULT_DIR" 2>/dev/null
