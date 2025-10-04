@@ -1,9 +1,15 @@
-# TAMP Server
+# TAMP Server - Termux Web Server Installer
 
-Instalador automático para servidor web completo no Termux (Apache, PHP, MariaDB e phpMyAdmin).
+<div align="center">
+  
+![TAMP Server Logo](https://github.com/Olliv3r/Install-Web-Server/blob/main/assets/tamp.png)
 
-![Tela do Script](https://github.com/Olliv3r/Install-Web-Server/blob/main/media/tela.jpg)
-![Servidor em Ação](https://github.com/Olliv3r/Install-Web-Server/blob/main/media/server.jpg)
+**TAMP** (Termux + Apache + MySQL + PHP) - Servidor web completo para Termux
+
+[![GitHub stars](https://img.shields.io/github/stars/Olliv3r/Install-Web-Server.svg)](https://github.com/Olliv3r/Install-Web-Web-Server/stargazers)
+[![GitHub license](https://img.shields.io/github/license/Olliv3r/Install-Web-Server)](https://github.com/Olliv3r/Install-Web-Server/blob/main/LICENSE)
+
+</div>
 
 ## 📋 Sobre o Projeto
 
@@ -89,15 +95,12 @@ Após a instalação, sua estrutura será:
 
 TAMP Server:
 
-```bash
-# Iniciar TAMP Server
+```
+# Iniciar
 tamp-start
 
-# Parar TAMP Server
+# Parar
 tamp-stop
-
-# Reiniciar Apache
-apachectl restart
 
 # Ver status
 tamp-status
@@ -154,6 +157,11 @@ Permissão negada:
 chmod 755 /sdcard/htdocs
 chmod 644 /sdcard/htdocs/*.php
 ```
+
+### Screenshot
+Painel do servidor:
+
+![Servidor em Ação](https://github.com/Olliv3r/Install-Web-Server/blob/main/assets/server.jpg)
 
 ### 🎁 Recursos Incluídos
 
