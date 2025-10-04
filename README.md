@@ -1,4 +1,4 @@
-# 🚀 Install Web Server - Termux
+# TAMP Server
 
 Instalador automático para servidor web completo no Termux (Apache, PHP, MariaDB e phpMyAdmin).
 
@@ -7,7 +7,7 @@ Instalador automático para servidor web completo no Termux (Apache, PHP, MariaD
 
 ## 📋 Sobre o Projeto
 
-O **Install Web Server** é um script automatizado que instala e configura um ambiente de desenvolvimento web completo no Termux, sem necessidade de acesso root.
+O **Install Web Server** é um script automatizado que instala e configura um ambiente de desenvolvimento web completo no Termux - TAMP Server, sem necessidade de acesso root.
 
 ### 🛠️ Componentes Instalados
 
@@ -87,36 +87,20 @@ Após a instalação, sua estrutura será:
 
 ⚙️ Gerenciamento de Serviços
 
-Apache:
+TAMP Server:
 
 ```bash
-# Iniciar Apache
-apachectl start
+# Iniciar TAMP Server
+tamp-start
 
-# Parar Apache
-apachectl stop
+# Parar TAMP Server
+tamp-stop
 
 # Reiniciar Apache
 apachectl restart
 
 # Ver status
-apachectl status
-```
-
-MariaDB:
-
-```bash
-# Iniciar MariaDB
-mariadbd-safe -u root &
-
-# Parar MariaDB
-pkill -f mariadbd
-
-# Conectar ao banco
-mariadb -u root
-
-# Ver processos
-ps aux | grep mariadbd
+tamp-status
 ```
 
 ### 🔧 Configurações Especiais
@@ -190,7 +174,7 @@ Encontrou problemas?
 2. Confirme que todos os pacotes foram instalados
 3. Execute o script novamente para reinstalação
 
-Autor: @silva_olie
+Autor: Olliv3r
 Contribuições: São bem-vindas! 😊
 
 ---

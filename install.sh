@@ -177,6 +177,72 @@ kill_process() {
     pkill -f "$1" 2>/dev/null
 }
 
+create_cmd_tamp() {
+  cat > $PREFIX/bin/tamp-start << EOF
+#!/bin/bash
+echo -e "[\e[1;34m*\e[0m] Iniciando TAMP Server..."
+
+if ! pgrep mariadbd >/dev/null && ! pgrep httpd >/dev/null; then
+  apachectl start && mariadbd-safe -u root &
+
+  sleep 3
+
+  if pgrep mariadbd >/dev/null && pgrep httpd >/dev/null; then
+    echo -e "[\e[1;32m+\e[0m] TAMP Server iniciado:"
+    echo -e "[\e[1;36m?\e[0m] Acesse: http://localhost:8080"
+    echo -e "[\e[1;36m?\e[0m] Acesse: http://localhost:8080/phpmyadmin"
+    exit 0
+  else
+    echo -e "[\e[1;31m×\e[0m] TAMP Server não iniciado!"
+    exit 1
+  fi
+
+else
+  echo -e "[\e[1;33m!\e[0m] TAMP Server ja está rodando!"
+  exit 0
+fi
+EOF
+
+cat > $PREFIX/bin/tamp-stop << EOF
+#!/bin/bash
+echo -e "[\e[1;34m*\e[0m] Parando TAMP Server..."
+
+if pgrep mariadbd >/dev/null && pgrep httpd >/dev/null; then
+  apachectl stop >/dev/null && pkill -f mariadbd
+  sleep 1
+
+  if ! pgrep mariadbd >/dev/null && ! pgrep httpd >/dev/null; then
+    echo -e "[\e[1;32m√\e[0m] TAMP Server parado."
+    exit 0
+  else
+    echo -e "[\e[1;31m×\e[0m] Falha ao parar o TAMP Server!"
+    exit 1
+  fi
+else
+  echo -e "[\e[1;33m!\e[0m] TAMP Server já foi parado!"
+  exit 0
+fi
+EOF
+
+cat > $PREFIX/bin/tamp-status << EOF
+#!/bin/bash
+echo -e "[\e[1;34m-\e[0m] Status TAMP Server:\n"
+
+if pgrep mariadbd >/dev/null && pgrep httpd >/dev/null; then
+  echo -e "[\e[1;32m√\e[0m] Apache rodando"
+  echo -e "[\e[1;32m√\e[0m] MariaDB rodando"
+else
+  echo -e "[\e[1;31m×\e[0m] Apache parado"
+  echo -e "[\e[1;31m×\e[0m] Apache parado"
+fi
+EOF
+
+  # Dar permissões de execução
+  chmod +x $PREFIX/bin/tamp-*
+  sleep 1
+  echo -e "\e[0m\n[+] Criando comandos TAMP...[\e[1;32mOK\e[0m]\e[0m"
+}
+
 # CONFIGURA O APACHE
 configure_apache() {
     banner "Apache"
@@ -213,6 +279,9 @@ configure_apache() {
     copy_if_different "./phpmyadmin/config.inc.php" "$PREFIX/etc/phpmyadmin/config.inc.php"
 
     create_htdocs
+
+    # Criar comandos TAMP
+    create_cmd_tamp
 
     echo -e "\e\n[0mApache foi configurado, pressione \e[1;33mENTER\e[0m para retornar ao menu...\n"; read
     menu
@@ -287,7 +356,7 @@ goodbye() {
 menu() {
     trap "goodbye" SIGTSTP SIGINT
     clear
-    banner "Menu IWS"
+    banner "Menu TAMP"
 
     echo -e "\n\e[1;32m\tFonte: Remo773\tVersão: $SCRIPT_VERSION\e[0m"
 
